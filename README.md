@@ -13,7 +13,7 @@ Para sortear las limitaciones de cuota de las APIs satelitales comerciales (Cope
 ## Estructura del Proyecto
 El repositorio está organizado en un formato modular para separar claramente los datos crudos del código fuente:
 
-\`\`\`text
+```text
 Sistema_Recomendacion_Yerba/
 │
 ├── data/                   # Almacenamiento local de información (No subir a Git)
@@ -28,24 +28,21 @@ Sistema_Recomendacion_Yerba/
 │
 ├── requirements.txt        # Dependencias del proyecto
 └── README.md               # Documentación general
-\`\`\`
 
 ## Configuración del Entorno (Setup)
 
 1. **Crear el entorno virtual:**
-   \`\`\`bash
+   ```bash
    python -m venv venv
-   \`\`\`
 
 2. **Activar el entorno virtual (Windows):**
-   \`\`\`bash
+    ```bash
    .\venv\Scripts\activate
-   \`\`\`
 
 3. **Instalar las dependencias requeridas:**
-   \`\`\`bash
+   ```bash
    pip install -r requirements.txt
-   \`\`\`
+   
 
 ## Tecnologías Principales
 *   **Procesamiento Espacial:** `rasterio`, `geopandas`, `numpy`
