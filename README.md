@@ -28,7 +28,7 @@ Sistema_Recomendacion_Yerba/
 │
 ├── requirements.txt        # Dependencias del proyecto
 └── README.md               # Documentación general
-```text
+```
 
 ## Configuración del Entorno (Setup)
 
@@ -37,8 +37,8 @@ Sistema_Recomendacion_Yerba/
    python -m venv venv
 
 2. **Activar el entorno virtual (Windows):**
-    ```bash
-   .\venv\Scripts\activate
+   ```bash
+   source venv/Scripts/activate
 
 3. **Instalar las dependencias requeridas:**
    ```bash
