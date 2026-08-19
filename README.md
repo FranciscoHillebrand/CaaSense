@@ -16,7 +16,7 @@ El repositorio está organizado en un formato modular para separar claramente lo
 ```text
 Sistema_Recomendacion_Yerba/
 │
-├── data/                   # Almacenamiento local de información (No subir a Git)
+├── data/                   # Almacenamiento local de información 
 │   ├── raw/                # Dataset histórico de imágenes satelitales (.tiff)
 │   ├── meteo/              # Registros meteorológicos descargados (.csv)
 │   └── processed/          # Dataset unificado para entrenamiento de ML
@@ -28,6 +28,7 @@ Sistema_Recomendacion_Yerba/
 │
 ├── requirements.txt        # Dependencias del proyecto
 └── README.md               # Documentación general
+```text
 
 ## Configuración del Entorno (Setup)
 
