@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import IsolationForest
 import joblib
 from pathlib import Path
 
@@ -89,6 +90,59 @@ def preparar_datos():
     # La función devuelve las matrices ya procesadas para inyectarlas directamente en los algoritmos
     return X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test, X_if_scaled, features
 
-# Bloque de ejecución. Permite probar que la separación y el escalado funcionen correctamente.
+def entrenar_isolation_forest(X_if_scaled):
+    """
+    Entrena el modelo no supervisado para detectar anomalías agronómicas 
+    basado exclusivamente en la distribución matemática de los datos crudos.
+    """
+    print("Iniciando Paso 2: Entrenamiento de Isolation Forest (No Supervisado)...\n")
+    
+    # ==========================================
+    # 1. CONFIGURACIÓN DE HIPERPARÁMETROS
+    # ==========================================
+    # n_estimators: Cantidad de "árboles" que intentarán aislar los datos. 100 es el estándar óptimo.
+    # contamination: Es la estimación de la tasa de anomalías en el mundo real. 
+    #                Asumimos agronómicamente que alrededor del 10% (0.10) de los lotes no etiquetados 
+    #                podrían estar sufriendo un evento extremo (plaga severa, sequía crítica).
+    # random_state: Fijamos una semilla (42) para que el entrenamiento sea reproducible en la evaluación.
+    # n_jobs=-1: Le indicamos al código que utilice todos los núcleos del procesador para mayor velocidad.
+    
+    modelo_if = IsolationForest(
+        n_estimators=100, 
+        contamination=0.10, 
+        random_state=42, 
+        n_jobs=-1
+    )
+    
+    # ==========================================
+    # 2. ENTRENAMIENTO (FIT)
+    # ==========================================
+    print("Construyendo la frontera matemática de normalidad fenológica...")
+    # Atención: Usamos solo .fit() pasándole EXCLUSIVAMENTE las variables predictoras (X_if_scaled).
+    # No le pasamos ninguna 'y' (etiquetas) porque el modelo debe descubrir los patrones por sí solo.
+    modelo_if.fit(X_if_scaled)
+    
+    # ==========================================
+    # 3. GUARDADO DEL MODELO ENTRENADO
+    # ==========================================
+    # Exportamos el "cerebro" ya entrenado del modelo a la carpeta models/
+    # Este archivo .pkl es el que utilizará el ejecutable final para escanear nuevas imágenes.
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    ruta_modelo = MODELS_DIR / "isolation_forest.pkl"
+    joblib.dump(modelo_if, ruta_modelo)
+    
+    print(f"-> ¡Detector de Anomalías entrenado y guardado con éxito en: {ruta_modelo}!\n")
+    
+    return modelo_if
+
+# Bloque de ejecución de prueba.
 if __name__ == "__main__":
-    preparar_datos()
+    # Ejecutamos el Paso 1: Cargamos y escalamos los datos
+    datos = preparar_datos()
+
+    # Si los datos se cargaron correctamente, procedemos a entrar los modelos de machine learning
+    if datos is not None:
+        X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test, X_if_scaled, features = datos
+        
+        # Entrenamos el modelo isolation forest pasándole solo la matriz no etiquetada
+        modelo_anomalias = entrenar_isolation_forest(X_if_scaled)
