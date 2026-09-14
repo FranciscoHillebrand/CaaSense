@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import IsolationForest
+from sklearn.ensemble import IsolationForest, RandomForestClassifier
+from sklearn.metrics import classification_report
 import joblib
 from pathlib import Path
 
@@ -135,14 +136,67 @@ def entrenar_isolation_forest(X_if_scaled):
     
     return modelo_if
 
+def entrenar_random_forest_base(X_train_scaled, y_train, X_val_scaled, y_val):
+    """
+    Entrena un modelo Random Forest de aprendizaje supervisado utilizando la 
+    configuración por defecto para establecer una métrica de rendimiento inicial.
+    """
+    print("Iniciando Paso 3: Entrenamiento Base del Random Forest Classifier...\n")
+    
+    # ==========================================
+    # 1. INSTANCIACIÓN DEL MODELO BASE
+    # ==========================================
+    # Inicializo el algoritmo con sus parámetros predeterminadas, con dos excepciones:
+    # 1. random_state=42: Fija la semilla matemática para que los resultados sean reproducibles.
+    # 2. class_weight='balanced': Estrategia de penalización. Como tengo menos fotos de 'Plaga' (117) 
+    #    que de 'Baja_Densidad' (487), el modelo le dará más peso matemático a las clases minoritarias 
+    #    durante el aprendizaje, evitando que se vuelva sesgado hacia las clases con más registros.
+    rf_base = RandomForestClassifier(random_state=42, class_weight='balanced')
+    
+    # ==========================================
+    # 2. ENTRENAMIENTO (APRENDIZAJE SUPERVISADO)
+    # ==========================================
+    print("Enseñando al algoritmo a relacionar índices y clima con las etiquetas agronómicas...")
+    
+    # El algoritmo toma las variables predictoras (X_train) 
+    # y las respuestas correctas (y_train), y construye los árboles de decisión internos 
+    # buscando las reglas matemáticas que asocian cada entrada con su resultado.
+    rf_base.fit(X_train_scaled, y_train)
+    
+    # ==========================================
+    # 3. PRIMERA EVALUACIÓN (CONJUNTO DE VALIDACIÓN)
+    # ==========================================
+    print("Evaluando el modelo base con el conjunto de Validación (14%)...")
+    
+    # Le pasamos el examen de validación (X_val). El modelo no conoce las respuestas de esto.
+    y_pred_val = rf_base.predict(X_val_scaled)
+    
+    # Comparamos las respuestas que dio el modelo (y_pred_val) contra la realidad validada en campo (y_val)
+    print("\n--- Reporte de Clasificación Base (Conjunto de Validación) ---")
+    # Genero una tabla con Precisión, Recall y F1-Score para cada una de las clases
+    print(classification_report(y_val, y_pred_val))
+    
+    # ==========================================
+    # 4. GUARDADO DEL MODELO BASE
+    # ==========================================
+    # Guardo esta versión inicial por si necesito comparar métricas en el futuro
+    ruta_modelo_base = MODELS_DIR / "rf_base.pkl"
+    joblib.dump(rf_base, ruta_modelo_base)
+    print(f"-> Modelo Base entrenado y guardado en: {ruta_modelo_base}\n")
+    
+    return rf_base
+
 # Bloque de ejecución de prueba.
 if __name__ == "__main__":
-    # Ejecutamos el Paso 1: Cargamos y escalamos los datos
+    # Cargo y escalo los datos
     datos = preparar_datos()
 
     # Si los datos se cargaron correctamente, procedemos a entrar los modelos de machine learning
     if datos is not None:
         X_train_scaled, y_train, X_val_scaled, y_val, X_test_scaled, y_test, X_if_scaled, features = datos
         
-        # Entrenamos el modelo isolation forest pasándole solo la matriz no etiquetada
+        # Entreno el modelo isolation forest pasándole solo la matriz no etiquetada
         modelo_anomalias = entrenar_isolation_forest(X_if_scaled)
+
+        # Entreno el Clasificador Base necesario para el modelo random forest (Supervisado)
+        modelo_rf_base = entrenar_random_forest_base(X_train_scaled, y_train, X_val_scaled, y_val)
