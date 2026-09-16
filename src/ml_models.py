@@ -2,6 +2,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest, RandomForestClassifier
 from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV
 import joblib
 from pathlib import Path
 
@@ -20,7 +21,7 @@ def preparar_datos():
     print("Iniciando Paso 1: Ingeniería de Características...\n")
     
     # ==========================================
-    # 1. CARGA DE LAS PARTICIONES (Del Bloque 1)
+    # 1. CARGA DE LAS PARTICIONES 
     # ==========================================
     # Intentamos cargar los 4 archivos que generamos en el script anterior (data_splitting.py)
     try:
@@ -40,7 +41,7 @@ def preparar_datos():
     # ==========================================
     # 2. DEFINICIÓN DE FEATURES (X) Y TARGET (y)
     # ==========================================
-    # Para que el modelo aprenda fisiología y clima, debemos ocultarle la "identidad" de la planta.
+    # Para que el modelo aprenda fisiología y clima, debemos evitar que identifique a cada parcela.
     # Excluimos metadatos: la fecha de la foto, el nombre de la chacra, la estación meteorológica y la respuesta final (etiqueta).
     columnas_excluir = ['fecha', 'parcela', 'ubicacion_meteo', 'etiqueta']
     
@@ -186,6 +187,88 @@ def entrenar_random_forest_base(X_train_scaled, y_train, X_val_scaled, y_val):
     
     return rf_base
 
+def optimizar_random_forest(X_train_scaled, y_train, X_val_scaled, y_val):
+    """
+    Aplico GridSearchCV para explorar sistemáticamente múltiples hiperparámetros.
+    El objetivo es encontrar la combinación que maximice la precisión mientras 
+    se penaliza la complejidad excesiva (prevención de overfitting).
+    """
+    print("Iniciando Paso 4: Optimización de Hiperparámetros (Grid Search)...\n")
+    
+    # ==========================================
+    # 1. DEFINICIÓN DE LA CUADRÍCULA (HIPERESPACIO DE BÚSQUEDA)
+    # ==========================================
+    # Definimos los límites matemáticos que el algoritmo tiene permitido explorar.
+    param_grid = {
+        # n_estimators: Cantidad de árboles. Más árboles dan estabilidad, pero consumen más memoria.
+        'n_estimators': [100, 200, 300],
+        
+        # max_depth: PROFUNDIDAD MÁXIMA. Este es el freno  contra el overfitting.
+        # Evita que el árbol crezca infinitamente hasta memorizar una sola fila de datos.
+        'max_depth': [10, 15, 20, None],
+        
+        # min_samples_split: Cantidad mínima de parcelas requeridas para dividir un nodo (crear una regla nueva).
+        'min_samples_split': [2, 5, 10],
+        
+        # min_samples_leaf: Cantidad mínima de parcelas que deben quedar en la decisión final (la hoja del árbol).
+        # Subir esto evita que el modelo cree reglas matemáticas aisladas para casos atípicos.
+        'min_samples_leaf': [1, 2, 4]
+    }
+    
+    print("Espacio de búsqueda definido. Entrenando múltiples arquitecturas de Random Forest...")
+    
+    # ==========================================
+    # 2. INSTANCIACIÓN Y EJECUCIÓN DEL GRID SEARCH
+    # ==========================================
+    # Inicializo un Random Forest base manteniendo el balanceo de clases (necesario para las plagas porque son menos registros)
+    rf_template = RandomForestClassifier(random_state=42, class_weight='balanced')
+    
+    # GridSearchCV automatiza el proceso de prueba y error. 
+    # cv=5 significa "Validación Cruzada Interna de 5 pliegues", lo que añade una capa extra 
+    # de rigor estadístico dividiendo el X_train en 5 subgrupos durante la búsqueda.
+    # n_jobs=-1 usa todos los núcleos de la computadora para acelerar el cálculo.
+    grid_search = GridSearchCV(
+        estimator=rf_template,
+        param_grid=param_grid,
+        cv=5,
+        n_jobs=-1,
+        scoring='f1_macro', # Priorizo el F1-Score equilibrado entre todas las clases
+        verbose=1 # Solo muestra una barra de progreso en la consola
+    )
+    
+    # Ejecutamos la búsqueda masiva.
+    grid_search.fit(X_train_scaled, y_train)
+    
+    # ==========================================
+    # 3. EXTRACCIÓN DEL MODELO GANADOR
+    # ==========================================
+    # Extraemos el modelo con la mejor combinación matemática encontrada
+    mejor_rf = grid_search.best_estimator_
+    
+    print("\n¡Búsqueda finalizada!")
+    print(f"Los hiperparámetros óptimos encontrados son:\n{grid_search.best_params_}\n")
+    
+    # ==========================================
+    # 4. EVALUACIÓN DEL MODELO OPTIMIZADO VS CONJUNTO DE VALIDACIÓN
+    # ==========================================
+    print("Sometiendo el modelo optimizado al examen de Validación (14%)...")
+    # Hacemos que el  modelo prediga las respuestas del conjunto de validación
+    y_pred_optimizado = mejor_rf.predict(X_val_scaled)
+    
+    print("\n--- Reporte de Clasificación OPTIMIZADO (Conjunto de Validación) ---")
+    print(classification_report(y_val, y_pred_optimizado))
+    
+    # ==========================================
+    # 5. GUARDADO DEL MODELO FINAL DE PRODUCCIÓN
+    # ==========================================
+    # Este es el archivo definitivo que usaremos para la fase de Test (Regla de Kalena) 
+    # y para el software .exe final.
+    ruta_modelo_optimizado = MODELS_DIR / "rf_optimizado.pkl"
+    joblib.dump(mejor_rf, ruta_modelo_optimizado)
+    print(f"-> Modelo optimizado guardado con éxito en: {ruta_modelo_optimizado}\n")
+    
+    return mejor_rf
+
 # Bloque de ejecución de prueba.
 if __name__ == "__main__":
     # Cargo y escalo los datos
@@ -200,3 +283,6 @@ if __name__ == "__main__":
 
         # Entreno el Clasificador Base necesario para el modelo random forest (Supervisado)
         modelo_rf_base = entrenar_random_forest_base(X_train_scaled, y_train, X_val_scaled, y_val)
+
+        # Ejecutamos la optimización para exprimir el rendimiento sin sobreajustar
+        modelo_rf_optimizado = optimizar_random_forest(X_train_scaled, y_train, X_val_scaled, y_val)
