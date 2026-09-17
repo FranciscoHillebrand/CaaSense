@@ -76,9 +76,13 @@ def extraer_pixeles_if():
         fecha_real = nombre_carpeta[:10]
         parcela = ruta_fecha.parent.name
 
+        parcela = ruta_fecha.parent.name
+        
         # Si la parcela está en la lista de prohibidas (examen final), la ignoramos
         if parcela in parcelas_prohibidas:
             continue
+            
+        ubicacion = mapear_estacion_meteorologica(parcela)
 
         ubicacion = mapear_estacion_meteorologica(parcela)
 
