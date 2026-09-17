@@ -32,7 +32,7 @@ def preparar_datos():
         # Conjunto de Prueba/Test (21%) (Incluye Kalena y Parcela Testigo) para el examen final
         df_test = pd.read_csv(PROCESSED_DIR / "rf_test.csv")
         # Conjunto No Etiquetado (Datos crudos) exclusivo para entrenar el Isolation Forest
-        df_if = pd.read_csv(PROCESSED_DIR / "if_unlabeled.csv")
+        df_if = pd.read_csv(PROCESSED_DIR / "if_pixels_unlabeled.csv")
     except FileNotFoundError as e:
         # Si alguien corre este script sin haber hecho el Bloque 1, el programa avisa y se frena
         print(f"Error: Faltan archivos de datos. Ejecute la partición primero. Detalle: {e}")

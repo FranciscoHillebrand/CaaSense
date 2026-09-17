@@ -172,11 +172,10 @@ def extraer_datos_satelitales(directorio_base: Path):
         # Extrae los primeros 10 caracteres que corresponden a la fecha real (dd-mm-yyyy)
         fecha_real = nombre_carpeta_fecha[:10] 
 
-        # Lógica para extraer la clasificación y el nombre de las parcelas SIN etiqueta
         if subruta[0] == "01_No_Etiquetadas":
-            etiqueta = "No_Etiquetada"
-            # Asume que la parcela es la carpeta anterior a la fecha
-            parcela = subruta[-2] if len(subruta) >= 3 else "Desconocida"
+            # No calculamos medianas para los datos no etiquetados porque 
+            # de eso se encarga exclusivamente el script extract_pixels_if.py
+            continue
 
         # Lógica para extraer la clasificación y el nombre de las parcelas CON etiqueta
         elif subruta[0] == "02_Etiquetadas":

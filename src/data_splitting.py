@@ -13,7 +13,7 @@ PROCESSED_DIR = BASE_DIR / "data" / "processed"
 def particionar_datos():
     print("Iniciando Paso 4: Partición de Datos (Data Splitting)...\n")
 
-    # Verificamos que el dataset limpio del Paso 3 exista
+    # Verificamos que el dataset limpio exista
     ruta_entrada = PROCESSED_DIR / "dataset_limpio.csv"
     if not ruta_entrada.exists():
         print("Error: No se encontró el dataset_limpio.csv")
@@ -22,17 +22,14 @@ def particionar_datos():
     df = pd.read_csv(ruta_entrada)
     
     # ==========================================
-    # 1. SEPARACIÓN POR TIPO DE ALGORITMO (Supervisado vs No Supervisado)
+    # 1. AISLAMIENTO DEL DATASET SUPERVISADO (Random Forest)
     # ==========================================
-    # Isolation Forest: Algoritmo detector de anomalías ciego. 
-    # Le pasamos EXCLUSIVAMENTE los datos sin etiqueta para que aprenda la "normalidad" del campo sin sesgo humano.
-    df_isolation_forest = df[df['etiqueta'] == 'No_Etiquetada'].copy()
     
     # Random Forest: Algoritmo de clasificación. 
-    # Le pasamos solo los registros etiquetados y validados en campo para que aprenda a distinguir clases.
+    # Filtramos y nos quedamos exclusivamente con los registros etiquetados (las medianas 
+    # de las parcelas validadas en campo) para que aprenda a distinguir clases.
     df_rf = df[df['etiqueta'] != 'No_Etiquetada'].copy()
     
-    print(f"Datos para Isolation Forest (No Supervisado): {len(df_isolation_forest)} registros.")
     print(f"Datos para Random Forest (Supervisado): {len(df_rf)} registros.\n")
 
     # ==========================================
@@ -106,12 +103,11 @@ def particionar_datos():
     # ==========================================
     # 4. EXPORTACIÓN BLINDADA (PREVENCIÓN DE DATA LEAKAGE)
     # ==========================================
-    # Exportamos los 4 archivos finales (3 para Random Forest, 1 para Isolation Forest)
+    # Exportamos exclusivamente los 3 archivos finales para el Random Forest.
     # index=False evita que Pandas guarde la columna de numeración de filas.
     df_train.to_csv(PROCESSED_DIR / "rf_train.csv", index=False)
     df_val.to_csv(PROCESSED_DIR / "rf_val.csv", index=False)
     df_test.to_csv(PROCESSED_DIR / "rf_test.csv", index=False)
-    df_isolation_forest.to_csv(PROCESSED_DIR / "if_unlabeled.csv", index=False)
     
     print("¡Éxito! Todos los conjuntos han sido exportados a data/processed/ listos para modelar.")
 
