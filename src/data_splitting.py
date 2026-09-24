@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from pathlib import Path
+import random
 
 # ==========================================
 # CONFIGURACIÓN DE RUTAS DEL PROYECTO
@@ -49,11 +50,14 @@ def particionar_datos():
         (~df_rf['parcela'].str.contains('Kalena'))
     ]['parcela'].unique()
 
-    # Si encontramos parcelas que cumplan la condición, tomamos la primera y la sumamos al grupo de Test
+    # Selección aleatoria en cada ejecución para cambiar la parcela testigo y evaluar robustez del modelo.
+    parcela_testigo_elegida = random.choice(anomalas_fuera_de_kalena)
+    print(f"Parcela testigo seleccionada al azar para esta iteración: {parcela_testigo_elegida}")
+
+    # Si encontramos parcelas que cumplan la condición, tomamos la elegida y la sumamos al grupo de Test
     if len(anomalas_fuera_de_kalena) > 0:
-        testigo = anomalas_fuera_de_kalena[0]
-        parcelas_test_fijo.append(testigo)
-        print(f"Parcela Testigo asignada automáticamente: {testigo}")
+        parcelas_test_fijo.append(parcela_testigo_elegida)
+        print(f"Parcela Testigo asignada para el examen: {parcela_testigo_elegida}")
     
     # Filtramos el dataset físico: separamos las parcelas elegidas para Test y dejamos el resto
     mask_test = df_rf['parcela'].isin(parcelas_test_fijo)
